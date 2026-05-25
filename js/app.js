@@ -1,8 +1,7 @@
 /**
  * app.js — CoffeeNote main application
- * Handles the log form, tasting notes picker, history view,
- * stats, CSV export, and searchable select components.
- * Depends on: db.js, auth.js
+ * All data operations go through Supabase (_sb client from auth.js).
+ * Depends on: db.js, auth.js (which exposes _sb and currentUser)
  */
 
 /* ── App state ── */
@@ -13,20 +12,116 @@ let formValues    = { drinkType: '', origin: '', varietal: '', process: '', roas
 let filterDrink   = '';
 let filterRating  = '';
 
-/* ── Per-user storage ── */
-function storageKey() {
-  return 'coffeeLog_' + currentUser.phone;
+/* ══════════════════════════════════════════════
+   DATA MAPPING  (Supabase snake_case ↔ JS camelCase)
+══════════════════════════════════════════════ */
+function toDb(entry) {
+  return {
+    user_id:       currentUser.id,
+    drink_type:    entry.drinkType    || null,
+    location:      entry.location     || null,
+    origin:        entry.origin       || null,
+    varietal:      entry.varietal     || null,
+    process:       entry.process      || null,
+    roast:         entry.roast        || null,
+    tasting_notes: entry.tastingNotes || [],
+    notes:         entry.notes        || null,
+    entry_date:    entry.date         || null,
+    rating:        entry.rating       || null,
+  };
 }
 
-function loadUserData() {
-  entries = JSON.parse(localStorage.getItem(storageKey()) || '[]');
+function fromDb(row) {
+  return {
+    id:           row.id,
+    drinkType:    row.drink_type,
+    location:     row.location,
+    origin:       row.origin,
+    varietal:     row.varietal,
+    process:      row.process,
+    roast:        row.roast,
+    tastingNotes: row.tasting_notes || [],
+    notes:        row.notes,
+    date:         row.entry_date,
+    rating:       row.rating,
+    createdAt:    row.created_at,
+  };
 }
 
-function persist() {
-  localStorage.setItem(storageKey(), JSON.stringify(entries));
+/* ══════════════════════════════════════════════
+   SUPABASE CRUD
+══════════════════════════════════════════════ */
+async function loadUserData() {
+  const { data, error } = await _sb
+    .from('coffee_entries')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error('loadUserData:', error); return; }
+  entries = (data || []).map(fromDb);
 }
 
-/* ── Helpers ── */
+async function saveEntry() {
+  if (!formValues.drinkType) { toast('Please select a drink type'); return; }
+
+  setSaveLoading(true);
+
+  const entry = {
+    drinkType:    formValues.drinkType,
+    location:     document.getElementById('f-location').value.trim(),
+    origin:       formValues.origin,
+    varietal:     formValues.varietal,
+    process:      formValues.process,
+    roast:        formValues.roast,
+    tastingNotes: [...selectedNotes],
+    notes:        document.getElementById('f-notes').value.trim(),
+    date:         document.getElementById('f-date').value || today(),
+    rating,
+  };
+
+  const { error } = await _sb
+    .from('coffee_entries')
+    .insert(toDb(entry));
+
+  setSaveLoading(false);
+
+  if (error) {
+    console.error('saveEntry:', error);
+    toast('Error saving entry — check your connection');
+    return;
+  }
+
+  await loadUserData();
+  resetForm();
+  toast('Entry saved ✓');
+}
+
+async function deleteEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+
+  const { error } = await _sb
+    .from('coffee_entries')
+    .delete()
+    .eq('id', id);
+
+  if (error) { console.error('deleteEntry:', error); toast('Error deleting entry'); return; }
+
+  entries = entries.filter(e => e.id !== id);
+  renderHistory();
+  renderStats();
+  toast('Entry deleted');
+}
+
+function setSaveLoading(on) {
+  const btn = document.querySelector('.form-footer .btn-primary');
+  if (!btn) return;
+  btn.disabled    = on;
+  btn.textContent = on ? 'Saving…' : 'Save Entry';
+}
+
+/* ══════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════ */
 function today() {
   return new Date().toISOString().split('T')[0];
 }
@@ -35,7 +130,7 @@ function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2200);
+  setTimeout(() => el.classList.remove('show'), 2400);
 }
 
 /* ══════════════════════════════════════════════
@@ -46,13 +141,11 @@ function makeSelect(containerId, groups, placeholder, onChange) {
   if (!wrap) return;
   wrap.innerHTML = '';
 
-  /* display pill */
   const display = document.createElement('div');
   display.className   = 'select-display placeholder';
   display.textContent = placeholder;
   display.style.position = 'relative';
 
-  /* dropdown */
   const dropdown = document.createElement('div');
   dropdown.className = 'select-dropdown';
 
@@ -119,19 +212,15 @@ function makeSelect(containerId, groups, placeholder, onChange) {
     searchEl.focus();
   }
 
-  function closeDropdown() {
-    dropdown.classList.remove('open');
-  }
+  function closeDropdown() { dropdown.classList.remove('open'); }
 
   display.onclick = e => {
     e.stopPropagation();
     dropdown.classList.contains('open') ? closeDropdown() : openDropdown();
   };
-
   searchEl.oninput  = () => renderOptions(searchEl.value);
   searchEl.onkeydown = e => { if (e.key === 'Escape') closeDropdown(); };
 
-  /* public API */
   wrap._getValue = () => currentValue;
   wrap._setValue = v => {
     currentValue = v || '';
@@ -140,7 +229,6 @@ function makeSelect(containerId, groups, placeholder, onChange) {
   };
 }
 
-/* Close all dropdowns on outside click */
 document.addEventListener('click', () => {
   document.querySelectorAll('.select-dropdown.open')
     .forEach(d => d.classList.remove('open'));
@@ -151,6 +239,7 @@ document.addEventListener('click', () => {
 ══════════════════════════════════════════════ */
 function buildNotesPicker() {
   const cats = document.getElementById('notesCategories');
+  if (!cats) return;
   cats.innerHTML = '';
 
   DB.tastingNotes.forEach(group => {
@@ -205,12 +294,10 @@ function removeNote(note) {
 
 function renderNoteChips() {
   const bar = document.getElementById('notesSelectedBar');
+  if (!bar) return;
   bar.innerHTML = '';
 
-  if (!selectedNotes.length) {
-    bar.classList.add('empty');
-    return;
-  }
+  if (!selectedNotes.length) { bar.classList.add('empty'); return; }
   bar.classList.remove('empty');
 
   selectedNotes.forEach(note => {
@@ -223,7 +310,7 @@ function renderNoteChips() {
 }
 
 /* ══════════════════════════════════════════════
-   FORM INIT
+   FORM INIT & RESET
 ══════════════════════════════════════════════ */
 function initForm() {
   makeSelect('sw-drinkType', DB.drinkTypes,    'Select drink type…', v => { formValues.drinkType = v; });
@@ -232,8 +319,34 @@ function initForm() {
   makeSelect('sw-process',   DB.processMethods, 'Select process…',    v => { formValues.process   = v; });
   makeSelect('sw-roast',     DB.roastProfiles,  'Select roast…',      v => { formValues.roast     = v; });
 
-  document.getElementById('f-date').value = today();
+  const dateEl = document.getElementById('f-date');
+  if (dateEl) dateEl.value = today();
+
   selectedNotes = [];
+  rating        = 0;
+  buildNotesPicker();
+}
+
+function resetForm() {
+  ['sw-drinkType','sw-origin','sw-varietal','sw-process','sw-roast'].forEach(id => {
+    const w = document.getElementById(id);
+    if (w && w._setValue) w._setValue('');
+  });
+
+  formValues = { drinkType: '', origin: '', varietal: '', process: '', roast: '' };
+
+  const loc   = document.getElementById('f-location');
+  const notes = document.getElementById('f-notes');
+  const date  = document.getElementById('f-date');
+  const ci    = document.getElementById('customNoteInput');
+  if (loc)   loc.value   = '';
+  if (notes) notes.value = '';
+  if (date)  date.value  = today();
+  if (ci)    ci.value    = '';
+
+  selectedNotes = [];
+  rating        = 0;
+  document.querySelectorAll('#starInput .star').forEach(s => s.classList.remove('lit'));
   buildNotesPicker();
 }
 
@@ -264,17 +377,12 @@ function initFilterSelects() {
     : [{ group: 'No entries yet', items: [] }];
 
   makeSelect('fw-filterDrink', drinkGroups, 'All drink types', v => {
-    filterDrink = v;
-    renderHistory();
+    filterDrink = v; renderHistory();
   });
-
   makeSelect('fw-filterRating',
     [{ group: 'Minimum Rating', items: ['★★★★★ (5)', '★★★★ & up (4)', '★★★ & up (3)'] }],
     'Any rating',
-    v => {
-      filterRating = v ? parseInt(v.match(/\d+/)[0]) : '';
-      renderHistory();
-    }
+    v => { filterRating = v ? parseInt(v.match(/\d+/)[0]) : ''; renderHistory(); }
   );
 }
 
@@ -285,58 +393,6 @@ function setRating(val) {
   rating = val;
   document.querySelectorAll('#starInput .star')
     .forEach((s, i) => s.classList.toggle('lit', i < val));
-}
-
-/* ══════════════════════════════════════════════
-   SAVE / RESET / DELETE
-══════════════════════════════════════════════ */
-function saveEntry() {
-  if (!formValues.drinkType) { toast('Please select a drink type'); return; }
-
-  entries.unshift({
-    id:           Date.now(),
-    drinkType:    formValues.drinkType,
-    location:     document.getElementById('f-location').value.trim(),
-    origin:       formValues.origin,
-    varietal:     formValues.varietal,
-    process:      formValues.process,
-    roast:        formValues.roast,
-    tastingNotes: [...selectedNotes],
-    notes:        document.getElementById('f-notes').value.trim(),
-    date:         document.getElementById('f-date').value || today(),
-    rating,
-  });
-
-  persist();
-  resetForm();
-  toast('Entry saved ✓');
-}
-
-function resetForm() {
-  ['sw-drinkType','sw-origin','sw-varietal','sw-process','sw-roast'].forEach(id => {
-    const w = document.getElementById(id);
-    if (w && w._setValue) w._setValue('');
-  });
-
-  formValues = { drinkType: '', origin: '', varietal: '', process: '', roast: '' };
-  document.getElementById('f-location').value    = '';
-  document.getElementById('f-notes').value       = '';
-  document.getElementById('f-date').value        = today();
-  document.getElementById('customNoteInput').value = '';
-
-  selectedNotes = [];
-  rating = 0;
-  document.querySelectorAll('#starInput .star').forEach(s => s.classList.remove('lit'));
-  buildNotesPicker();
-}
-
-function deleteEntry(id) {
-  if (!confirm('Delete this entry?')) return;
-  entries = entries.filter(e => e.id !== id);
-  persist();
-  renderHistory();
-  renderStats();
-  toast('Entry deleted');
 }
 
 /* ══════════════════════════════════════════════
@@ -359,7 +415,6 @@ function renderHistory() {
   });
 
   const container = document.getElementById('entries');
-
   if (!list.length) {
     container.innerHTML = `
       <div class="empty">
@@ -368,18 +423,15 @@ function renderHistory() {
       </div>`;
     return;
   }
-
   container.innerHTML = list.map(entryHTML).join('');
 }
 
 function entryHTML(e) {
   const stars = Array.from({ length: 5 }, (_, i) =>
-    `<span class="${i < e.rating ? 'lit' : 'dim'}">★</span>`
+    `<span class="${i < (e.rating || 0) ? 'lit' : 'dim'}">★</span>`
   ).join('');
 
-  const notes = Array.isArray(e.tastingNotes)
-    ? e.tastingNotes
-    : (e.tastingNotes ? [e.tastingNotes] : []);
+  const notes = e.tastingNotes || [];
 
   const tags = [
     e.origin   && `<span class="tag">${e.origin}</span>`,
@@ -388,9 +440,7 @@ function entryHTML(e) {
     e.roast    && `<span class="tag gray">${e.roast}</span>`,
   ].filter(Boolean).join('');
 
-  const noteChips = notes
-    .map(n => `<span class="tag amber">${n}</span>`)
-    .join('');
+  const noteChips = notes.map(n => `<span class="tag amber">${n}</span>`).join('');
 
   const dateStr = e.date
     ? new Date(e.date + 'T12:00:00').toLocaleDateString(undefined, {
@@ -412,7 +462,7 @@ function entryHTML(e) {
       ${e.notes   ? `<div class="entry-notes">${e.notes}</div>`  : ''}
       <div class="entry-footer">
         <div class="entry-stars">${stars}</div>
-        <button class="btn-danger" onclick="deleteEntry(${e.id})">Delete</button>
+        <button type="button" class="btn-danger" onclick="deleteEntry('${e.id}')">Delete</button>
       </div>
     </div>`;
 }
@@ -421,9 +471,9 @@ function entryHTML(e) {
    STATS
 ══════════════════════════════════════════════ */
 function renderStats() {
-  const total  = entries.length;
-  const rated  = entries.filter(e => e.rating);
-  const avg    = rated.length
+  const total   = entries.length;
+  const rated   = entries.filter(e => e.rating);
+  const avg     = rated.length
     ? (rated.reduce((s, e) => s + e.rating, 0) / rated.length).toFixed(1)
     : '—';
   const origins = new Set(entries.map(e => e.origin).filter(Boolean)).size;
@@ -455,11 +505,9 @@ function exportCSV() {
   const rows = entries.map(e => [
     e.date, e.drinkType, e.location, e.origin, e.varietal,
     e.process, e.roast,
-    Array.isArray(e.tastingNotes)
-      ? e.tastingNotes.join(', ')
-      : (e.tastingNotes || ''),
+    (e.tastingNotes || []).join(', '),
     e.notes, e.rating,
-  ].map(v => `"${(v || '').toString().replace(/"/g, '""')}"`).join(','));
+  ].map(v => `"${(v ?? '').toString().replace(/"/g, '""')}"`).join(','));
 
   const csv  = [headers.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });

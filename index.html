@@ -9,11 +9,30 @@
   <meta name="theme-color" content="#2c5f2e" />
   <title>CoffeeNote</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* Loading screen — shown while checking Supabase session */
+    #loadingScreen {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, #1e4620, #2c5f2e);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 14px; z-index: 999;
+    }
+    #loadingScreen .spin { font-size: 52px; animation: pulse 1.4s ease-in-out infinite; }
+    #loadingScreen p { color: rgba(255,255,255,0.75); font-size: 14px; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  </style>
 </head>
 <body>
 
+<!-- Loading splash (shown while checking auth session) -->
+<div id="loadingScreen">
+  <div class="spin">☕</div>
+  <p>Loading…</p>
+</div>
+
 <!-- ═══════════════════ AUTH SCREEN ═══════════════════ -->
-<div id="authScreen">
+<div id="authScreen" style="display:none">
   <div class="auth-card">
     <div class="auth-logo">
       <span class="icon">☕</span>
@@ -38,7 +57,7 @@
 
     <div class="auth-field">
       <label>Password</label>
-      <input type="password" id="authPassword" placeholder="Enter your password" />
+      <input type="password" id="authPassword" placeholder="At least 6 characters" />
     </div>
 
     <div class="auth-field" id="confirmField" style="display:none">
@@ -56,7 +75,7 @@
 </div>
 
 <!-- ═══════════════════ MAIN APP ═══════════════════ -->
-<div id="app">
+<div id="app" style="display:none">
 
   <header>
     <div class="logo"><span class="logo-icon">☕</span> CoffeeNote</div>
@@ -113,20 +132,17 @@
           <div class="form-group full">
             <label>Tasting Notes</label>
             <div class="notes-picker" id="notesPicker">
-              <!-- Selected chips -->
               <div class="notes-selected-bar empty" id="notesSelectedBar"></div>
-              <!-- Custom note input -->
               <div class="notes-custom-row">
                 <input
                   type="text"
                   id="customNoteInput"
-                  placeholder="Type a custom note and press Enter or ＋"
+                  placeholder="Type a custom note and press Enter or +"
                   maxlength="40"
                   onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomNote();}"
                 />
-                <button class="btn-add-note" onclick="addCustomNote()">＋ Add</button>
+                <button type="button" class="btn-add-note" onclick="addCustomNote()">＋ Add</button>
               </div>
-              <!-- Preset tag categories -->
               <div class="notes-categories" id="notesCategories"></div>
             </div>
           </div>
@@ -155,8 +171,8 @@
         </div>
 
         <div class="form-footer">
-          <button class="btn-ghost" onclick="resetForm()">Clear</button>
-          <button class="btn-primary" onclick="saveEntry()">Save Entry</button>
+          <button type="button" class="btn-ghost" onclick="resetForm()">Clear</button>
+          <button type="button" class="btn-primary" onclick="saveEntry()">Save Entry</button>
         </div>
       </div>
     </div>
@@ -174,12 +190,14 @@
       <div class="entries" id="entries"></div>
     </div>
 
-  </div><!-- /.page -->
-</div><!-- /#app -->
+  </div>
+</div>
 
 <div id="toast"></div>
 
-<!-- Scripts — order matters: db → auth → app -->
+<!-- ── Scripts: Supabase SDK first, then app scripts ── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
 <script src="js/db.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/app.js"></script>
