@@ -37,7 +37,7 @@ function switchAuthTab(mode) {
   });
 
   document.getElementById('confirmField').style.display =
-    mode === 'register' ? '' : 'none';
+    mode === 'register' ? 'block' : 'none';
 
   document.getElementById('authSubmitBtn').textContent =
     mode === 'login' ? 'Sign In' : 'Create Account';
@@ -99,7 +99,7 @@ function loginAs(phone) {
   currentUser = { phone, displayPhone: '+' + phone };
 
   document.getElementById('authScreen').style.display = 'none';
-  document.getElementById('app').style.display = '';
+  document.getElementById('app').style.display = 'block';  // must be explicit — '' would leave CSS display:none in effect
   document.getElementById('userBadge').textContent = currentUser.displayPhone;
 
   loadUserData();
@@ -119,9 +119,8 @@ function logout() {
 }
 
 /* ── Allow Enter key on all auth inputs ── */
-document.addEventListener('DOMContentLoaded', () => {
-  ['authPhone', 'authPassword', 'authConfirm'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') handleAuth(); });
-  });
+// Scripts are at end of <body>, so DOM is already ready — no need for DOMContentLoaded wrapper
+['authPhone', 'authPassword', 'authConfirm'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('keydown', e => { if (e.key === 'Enter') handleAuth(); });
 });

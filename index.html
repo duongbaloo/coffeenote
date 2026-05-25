@@ -18,8 +18,8 @@
     </div>
 
     <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
-      <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+      <button type="button" class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button type="button" class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
     </div>
 
     <div id="authError" class="auth-error"></div>
@@ -42,7 +42,7 @@
       <input type="password" id="authConfirm" placeholder="Repeat your password" />
     </div>
 
-    <button class="btn-auth" id="authSubmitBtn" onclick="handleAuth()">Sign In</button>
+    <button type="button" class="btn-auth" id="authSubmitBtn" onclick="handleAuth()">Sign In</button>
 
     <p class="auth-hint" id="authHint">
       Don't have an account?
