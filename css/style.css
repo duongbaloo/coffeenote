@@ -417,6 +417,7 @@ input[type="text"],
 input[type="date"],
 input[type="tel"],
 input[type="password"],
+input[type="number"],
 textarea {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -435,6 +436,7 @@ input[type="text"]:focus,
 input[type="date"]:focus,
 input[type="tel"]:focus,
 input[type="password"]:focus,
+input[type="number"]:focus,
 textarea:focus { border-color: var(--accent); background: #fff; }
 
 textarea {
@@ -596,6 +598,15 @@ textarea {
 .form-footer .btn-primary { width: 100%; justify-content: center; font-size: 16px; min-height: 50px; }
 .form-footer .btn-ghost   { width: 100%; text-align: center; }
 
+.section-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 22px 0 12px;
+}
+
 /* ── Stats Bar ── */
 .stats-bar {
   display: grid;
@@ -645,6 +656,7 @@ textarea {
 .tag { background: var(--accent-light); color: var(--accent); font-size: 12px; font-weight: 500; padding: 3px 9px; border-radius: 99px; }
 .tag.gray  { background: #f0f0ee; color: var(--muted); }
 .tag.amber { background: #fdf6e8; color: #8a6a00; }
+.tag.measure { background: #eef5f8; color: #236073; }
 
 .entry-notes { font-size: 13px; color: #888; margin-top: 5px; line-height: 1.4; }
 
@@ -718,6 +730,7 @@ textarea {
   input[type="date"],
   input[type="tel"],
   input[type="password"],
+  input[type="number"],
   textarea { font-size: 14px; min-height: 40px; padding: 9px 12px; border-radius: 8px; }
 
   .notes-tag { font-size: 12px; padding: 4px 10px; min-height: auto; }
