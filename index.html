@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#2c5f2e" />
   <title>CoffeeNote</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
@@ -55,19 +59,19 @@
 <div id="app">
 
   <header>
-    <div class="logo"><span>☕</span> CoffeeNote</div>
+    <div class="logo"><span class="logo-icon">☕</span> CoffeeNote</div>
     <div class="header-right">
       <span class="user-badge" id="userBadge"></span>
-      <button class="btn-ghost" onclick="exportCSV()">Export CSV</button>
-      <button class="btn-ghost" onclick="logout()">Sign Out</button>
+      <button type="button" class="btn-ghost" onclick="exportCSV()">Export</button>
+      <button type="button" class="btn-ghost" onclick="logout()">Sign Out</button>
     </div>
   </header>
 
   <div class="page">
 
     <div class="tabs">
-      <button class="tab active" onclick="showTab('log')">Log a Coffee</button>
-      <button class="tab" onclick="showTab('history')">My Journal</button>
+      <button type="button" class="tab active" onclick="showTab('log')">Log a Coffee</button>
+      <button type="button" class="tab" onclick="showTab('history')">My Journal</button>
     </div>
 
     <!-- ── Log Form ── -->
