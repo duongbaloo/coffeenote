@@ -156,6 +156,7 @@ async function logout() {
   await _sb.auth.signOut();
   // onAuthStateChange fires → _showAuthScreen()
   entries = [];
+  brewEntries = [];
   document.getElementById('authPassword').value = '';
   document.getElementById('authConfirm').value  = '';
   showAuthError('');

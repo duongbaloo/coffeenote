@@ -90,6 +90,7 @@
 
     <div class="tabs">
       <button type="button" class="tab active" onclick="showTab('log')">Log a Coffee</button>
+      <button type="button" class="tab" onclick="showTab('brew')">Brew Log</button>
       <button type="button" class="tab" onclick="showTab('history')">My Journal</button>
     </div>
 
@@ -175,6 +176,109 @@
           <button type="button" class="btn-primary" onclick="saveEntry()">Save Entry</button>
         </div>
       </div>
+    </div>
+
+    <!-- ── Brew Log ── -->
+    <div id="tab-brew" style="display:none">
+      <div class="card">
+        <div class="card-title">New Brew</div>
+        <div class="form-grid">
+
+          <div class="form-group">
+            <label>Drink Type</label>
+            <div class="select-wrap" id="bw-drinkType"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Coffee Amount</label>
+            <input type="number" id="b-coffeeAmount" placeholder="e.g. 18" min="0" step="0.1" inputmode="decimal" />
+          </div>
+
+          <div class="form-group">
+            <label>Water Amount</label>
+            <input type="number" id="b-waterAmount" placeholder="e.g. 300" min="0" step="1" inputmode="decimal" />
+          </div>
+
+          <div class="form-group">
+            <label>Temperature</label>
+            <input type="number" id="b-temperature" placeholder="e.g. 93" min="0" step="0.1" inputmode="decimal" />
+          </div>
+
+          <div class="form-group">
+            <label>Extraction Time</label>
+            <input type="text" id="b-extractionTime" placeholder="e.g. 2:45 or 28 sec" />
+          </div>
+
+          <div class="form-group">
+            <label>Bean Origin</label>
+            <div class="select-wrap" id="bw-origin"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Varietal</label>
+            <div class="select-wrap" id="bw-varietal"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Process Method</label>
+            <div class="select-wrap" id="bw-process"></div>
+          </div>
+
+          <div class="form-group">
+            <label>Roast Profile</label>
+            <div class="select-wrap" id="bw-roast"></div>
+          </div>
+
+          <div class="form-group full">
+            <label>Tasting Notes</label>
+            <div class="notes-picker" id="brewNotesPicker">
+              <div class="notes-selected-bar empty" id="brewNotesSelectedBar"></div>
+              <div class="notes-custom-row">
+                <input
+                  type="text"
+                  id="brewCustomNoteInput"
+                  placeholder="Type a custom note and press Enter or +"
+                  maxlength="40"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();addCustomNote('brew');}"
+                />
+                <button type="button" class="btn-add-note" onclick="addCustomNote('brew')">＋ Add</button>
+              </div>
+              <div class="notes-categories" id="brewNotesCategories"></div>
+            </div>
+          </div>
+
+          <div class="form-group full">
+            <label>Your Brew Notes</label>
+            <textarea id="b-notes" placeholder="Recipe, grind size, agitation, drawdown, what you would change next time…"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="b-date" />
+          </div>
+
+          <div class="form-group">
+            <label>Rating</label>
+            <div class="stars" id="brewStarInput">
+              <button type="button" class="star" onclick="setBrewRating(1)">★</button>
+              <button type="button" class="star" onclick="setBrewRating(2)">★</button>
+              <button type="button" class="star" onclick="setBrewRating(3)">★</button>
+              <button type="button" class="star" onclick="setBrewRating(4)">★</button>
+              <button type="button" class="star" onclick="setBrewRating(5)">★</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="form-footer">
+          <button type="button" class="btn-ghost" onclick="resetBrewForm()">Clear</button>
+          <button type="button" class="btn-primary" id="brewSaveBtn" onclick="saveBrewEntry()">Save Brew</button>
+        </div>
+      </div>
+
+      <div class="section-title">Brew History</div>
+      <div class="stats-bar" id="brewStatsBar"></div>
+      <div class="entries" id="brewEntries"></div>
     </div>
 
     <!-- ── Journal / History ── -->
